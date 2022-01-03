@@ -1,5 +1,5 @@
 {
-	"name": "sortablejs",
+	"name": "qiov-sortablejs",
 	"exportName": "Sortable",
 	"version": "1.14.0",
 	"devDependencies": {
