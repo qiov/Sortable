@@ -2466,7 +2466,7 @@ function _getSwapDirection(evt, target, targetRect, vertical, swapThreshold, inv
       invert = false;
   const zoom = parseFloat(document.getElementsByTagName('body')[0].style.zoom, 10);
 
-  if (zoom !== 1) {
+  if (zoom && zoom !== 1) {
     // fix mouseOnAxis if zoom is modified
     mouseOnAxis = mouseOnAxis / zoom;
   }
