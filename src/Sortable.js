@@ -393,7 +393,8 @@ function Sortable(el, options) {
 		fallbackTolerance: 0,
 		fallbackOffset: {x: 0, y: 0},
 		supportPointer: Sortable.supportPointer !== false && ('PointerEvent' in window) && !Safari,
-		emptyInsertThreshold: 5
+		emptyInsertThreshold: 5,
+		zoom: 1
 	};
 
 	PluginManager.initializePlugins(this, el, defaults);
@@ -1240,7 +1241,7 @@ Sortable.prototype = /** @lends Sortable.prototype */ {
 					differentRowCol ? 1 : options.swapThreshold,
 					options.invertedSwapThreshold == null ? options.swapThreshold : options.invertedSwapThreshold,
 					isCircumstantialInvert,
-					lastTarget === target
+					lastTarget === target, this
 				);
 
 				let sibling;
@@ -1790,9 +1791,9 @@ function _unsilent() {
 function _ghostIsFirst(evt, vertical, sortable) {
 	let rect = getRect(getChild(sortable.el, 0, sortable.options, true));
 	const spacer = 10;
-
+	// 这里新增了对  rect.top  rect.right 的 zoom 缩放，也就是对上下排序的一个位置 或者左右排序的第一个位置的判断 进行了 zoom缩放处理
 	return vertical ?
-		((evt.clientX < rect.left - spacer) || (evt.clientY < rect.top && evt.clientX < rect.right)) :
+		((evt.clientX < rect.left - spacer) || (evt.clientY < rect.top * sortable.zoom && evt.clientX < rect.right * sortable.zoom)) :
 		((evt.clientY < rect.top - spacer) || (evt.clientY < rect.bottom && evt.clientX < rect.left))
 }
 
@@ -1805,17 +1806,18 @@ function _ghostIsLast(evt, vertical, sortable) {
 		(evt.clientX > rect.right && evt.clientY > rect.top || evt.clientX <= rect.right && evt.clientY > rect.bottom + spacer);
 }
 
-function _getSwapDirection(evt, target, targetRect, vertical, swapThreshold, invertedSwapThreshold, invertSwap, isLastTarget) {
+function _getSwapDirection(evt, target, targetRect, vertical, swapThreshold, invertedSwapThreshold, invertSwap, isLastTarget, sortable) {
 	let mouseOnAxis = vertical ? evt.clientY : evt.clientX,
 		targetLength = vertical ? targetRect.height : targetRect.width,
 		targetS1 = vertical ? targetRect.top : targetRect.left,
 		targetS2 = vertical ? targetRect.bottom : targetRect.right,
 		invert = false;
 
-	const zoom = parseFloat(document.getElementsByTagName('body')[0].style.zoom, 10)
-	if (zoom && zoom !== 1) { // fix mouseOnAxis if zoom is modified
-    mouseOnAxis = mouseOnAxis / zoom
-  }
+	const zoom = sortable.options.zoom
+	if (zoom && zoom !== 1) {
+		// fix mouseOnAxis if zoom is modified
+		mouseOnAxis = mouseOnAxis / zoom;
+	}
 
 	if (!invertSwap) {
 		// Never invert or create dragEl shadow when target movemenet causes mouse to move past the end of regular swapThreshold

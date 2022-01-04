@@ -1,5 +1,5 @@
 /**!
- * Sortable 1.14.0
+ * Sortable 1.14.1
  * @author	RubaXa   <trash@rubaxa.org>
  * @author	owenm    <owen23355@gmail.com>
  * @license MIT
@@ -22,7 +22,7 @@ function _extends() {
   return _extends.apply(this, arguments);
 }
 
-var version = "1.14.0";
+var version = "1.14.1";
 
 function userAgent(pattern) {
   if (typeof window !== 'undefined' && window.navigator) {
@@ -1143,7 +1143,8 @@ function Sortable(el, options) {
       y: 0
     },
     supportPointer: Sortable.supportPointer !== false && 'PointerEvent' in window && !Safari,
-    emptyInsertThreshold: 5
+    emptyInsertThreshold: 5,
+    zoom: 1
   };
   PluginManager.initializePlugins(this, el, defaults); // Set default options
 
@@ -1953,7 +1954,7 @@ Sortable.prototype =
           isCircumstantialInvert = !differentRowCol && options.invertSwap || differentLevel;
         }
 
-        direction = _getSwapDirection(evt, target, targetRect, vertical, differentRowCol ? 1 : options.swapThreshold, options.invertedSwapThreshold == null ? options.swapThreshold : options.invertedSwapThreshold, isCircumstantialInvert, lastTarget === target);
+        direction = _getSwapDirection(evt, target, targetRect, vertical, differentRowCol ? 1 : options.swapThreshold, options.invertedSwapThreshold == null ? options.swapThreshold : options.invertedSwapThreshold, isCircumstantialInvert, lastTarget === target, this);
         let sibling;
 
         if (direction !== 0) {
@@ -2448,8 +2449,9 @@ function _unsilent() {
 
 function _ghostIsFirst(evt, vertical, sortable) {
   let rect = getRect(getChild(sortable.el, 0, sortable.options, true));
-  const spacer = 10;
-  return vertical ? evt.clientX < rect.left - spacer || evt.clientY < rect.top && evt.clientX < rect.right : evt.clientY < rect.top - spacer || evt.clientY < rect.bottom && evt.clientX < rect.left;
+  const spacer = 10; // 这里新增了对  rect.top  rect.right 的 zoom 缩放，也就是对上下排序的一个位置 或者左右排序的第一个位置的判断 进行了 zoom缩放处理
+
+  return vertical ? evt.clientX < rect.left - spacer || evt.clientY < rect.top * sortable.zoom && evt.clientX < rect.right * sortable.zoom : evt.clientY < rect.top - spacer || evt.clientY < rect.bottom && evt.clientX < rect.left;
 }
 
 function _ghostIsLast(evt, vertical, sortable) {
@@ -2458,13 +2460,13 @@ function _ghostIsLast(evt, vertical, sortable) {
   return vertical ? evt.clientX > rect.right + spacer || evt.clientX <= rect.right && evt.clientY > rect.bottom && evt.clientX >= rect.left : evt.clientX > rect.right && evt.clientY > rect.top || evt.clientX <= rect.right && evt.clientY > rect.bottom + spacer;
 }
 
-function _getSwapDirection(evt, target, targetRect, vertical, swapThreshold, invertedSwapThreshold, invertSwap, isLastTarget) {
+function _getSwapDirection(evt, target, targetRect, vertical, swapThreshold, invertedSwapThreshold, invertSwap, isLastTarget, sortable) {
   let mouseOnAxis = vertical ? evt.clientY : evt.clientX,
       targetLength = vertical ? targetRect.height : targetRect.width,
       targetS1 = vertical ? targetRect.top : targetRect.left,
       targetS2 = vertical ? targetRect.bottom : targetRect.right,
       invert = false;
-  const zoom = parseFloat(document.getElementsByTagName('body')[0].style.zoom, 10);
+  const zoom = sortable.options.zoom;
 
   if (zoom && zoom !== 1) {
     // fix mouseOnAxis if zoom is modified
